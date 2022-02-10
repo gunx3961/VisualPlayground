@@ -36,6 +36,12 @@ namespace Visualizer
         public bool WasMouseMiddleButtonJustReleased =>
             _currentMouseState.MiddleButton is ButtonState.Released && _previousMouseState.MiddleButton is ButtonState.Pressed;
 
+        public bool WasMouseLeftButtonJustPressed =>
+            _currentMouseState.LeftButton is ButtonState.Pressed && _previousMouseState.LeftButton is ButtonState.Released;
+
+        public bool WasMouseLeftButtonJustReleased =>
+            _currentMouseState.LeftButton is ButtonState.Released && _previousMouseState.LeftButton is ButtonState.Pressed;
+
         public Point MouseDeltaMovement => _currentMouseState.Position - _previousMouseState.Position;
 
         public int MouseDeltaScrollWheelValue => _currentMouseState.ScrollWheelValue - _previousMouseState.ScrollWheelValue;

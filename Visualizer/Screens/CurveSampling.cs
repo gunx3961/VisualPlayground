@@ -10,12 +10,13 @@ namespace Visualizer.Screens
         public int SamplingCount;
 
         public void Draw<T>(VisualizerGame game)
-            where T : IParametricCurve, new()
+            where T : struct, IParametricCurve
         {
             Draw(game, new T());
         }
-        
-        public void Draw(VisualizerGame game, IParametricCurve curve)
+
+        public void Draw<T>(VisualizerGame game, T curve)
+            where T : struct, IParametricCurve
         {
             var stepLength = (To - From) / (SamplingCount - 1);
             Span<Vector2> points = stackalloc Vector2[SamplingCount];
@@ -27,7 +28,7 @@ namespace Visualizer.Screens
 
             for (var i = 1; i < points.Length; i += 1)
             {
-                game.Batch.DrawLine(points[i - 1], points[i], Color.Aqua, 2f);
+                game.Batch.DrawLine(points[i - 1], points[i], game.Palette.HalfPositive, 2f);
             }
         }
     }

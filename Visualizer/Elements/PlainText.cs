@@ -12,7 +12,7 @@ namespace Visualizer.Elements
         public void Draw(VisualizerGame game)
         {
             var pixelPosition = game.ToPixelPosition(Position);
-            game.Batch.DrawString(game.GlobalContents.DefaultFont, Value, pixelPosition, Color.White, 0,
+            game.Batch.DrawString(game.GlobalContents.DefaultFont, Value, pixelPosition, game.Palette.Positive, 0,
                 Vector2.Zero, game.ScaleFactor * Scale, SpriteEffects.None, 0);
         }
     }

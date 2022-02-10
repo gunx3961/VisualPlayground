@@ -18,9 +18,8 @@ namespace Visualizer.Screens
 
             Game.AddElement(new Button
             {
-                Label = "Integration Comparison", Position = new Vector2(-1, -1),
-                OnClick = () => Game.SwitchScreen<IntegrationComparison>(),
-                Scale = 2
+                Label = "Integration Comparison", UnitPosition = new Point(-1, -1),
+                OnClick = () => Game.SwitchScreen<IntegrationComparison>()
             });
         }
 

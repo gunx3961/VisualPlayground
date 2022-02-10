@@ -12,7 +12,7 @@ namespace Visualizer
     {
         private GraphicsDeviceManager _graphics;
 
-        private IScreen _currentScreen;
+        private IScreen? _currentScreen;
         private Camera2D _camera;
 
         private const int DefaultPpu = 128;
@@ -25,10 +25,13 @@ namespace Visualizer
 
         private readonly Dictionary<string, ITiledUiElement> _simpleTileHash;
         private readonly List<IUiElement> _uiSpace;
+        private ITiledUiElement? _currentHovered;
+
 
         public SpriteBatch Batch { get; private set; }
         public readonly Input Input;
         public GlobalContents GlobalContents { get; private set; }
+        public IPalette Palette;
 
 
         public VisualizerGame()
@@ -48,6 +51,15 @@ namespace Visualizer
 
             _simpleTileHash = new Dictionary<string, ITiledUiElement>();
             _uiSpace = new List<IUiElement>();
+
+            Palette = new SimplePalette
+            {
+                Negative = new Color(72, 99, 117),
+                HalfNegative = new Color(12, 199, 150),
+                MidTone = new Color(95, 213, 151),
+                HalfPositive = new Color(205, 253, 119),
+                Positive = new Color(247, 247, 247)
+            };
         }
 
         protected override void Initialize()
@@ -97,13 +109,15 @@ namespace Visualizer
 
             MaintainPpu();
 
+            MaintainUI();
+
             _currentScreen?.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
             base.Draw(gameTime);
-            GraphicsDevice.Clear(Color.DarkSlateGray);
+            GraphicsDevice.Clear(Palette.Negative);
 
             var cameraMatrix = _camera.GetMatrix(Window);
 
@@ -119,15 +133,15 @@ namespace Visualizer
 
             void DrawGrid(Vector2 point)
             {
-                Batch.DrawLine(point + new Vector2(-radius, 0), point + new Vector2(radius, 0), Color.DarkGray);
-                Batch.DrawLine(point + new Vector2(0, -radius), point + new Vector2(0, radius), Color.DarkGray);
+                Batch.DrawLine(point + new Vector2(-radius, 0), point + new Vector2(radius, 0), Palette.HalfNegative);
+                Batch.DrawLine(point + new Vector2(0, -radius), point + new Vector2(0, radius), Palette.HalfNegative);
             }
 
             void DrawUnitMeasureText(Point point)
             {
                 if (point.X % 5 != 0 || point.Y % 5 != 0) return;
                 Batch.DrawString(GlobalContents.DefaultFont, ZString.Format("{0},{1}", point.X, point.Y),
-                    ToPixelPosition(point.ToVector2()) + new Vector2(1, -2), Color.DarkGray);
+                    ToPixelPosition(point.ToVector2()) + new Vector2(1, -2), Palette.HalfNegative);
             }
 
             var l = _camera.Center.X - Window.ClientBounds.Width / 2;
@@ -183,6 +197,24 @@ namespace Visualizer
             _camera.Center += (pixelPositionOfIntentAfter - pixelPositionOfIntentBefore).ToPoint();
         }
 
+        private void MaintainUI()
+        {
+            var mouseUnitPosition = Input.MouseWorldUnitPosition;
+            var mouseUnitPoint = new Point((int)MathF.Floor(mouseUnitPosition.X), (int)MathF.Floor(mouseUnitPosition.Y));
+            var key = ZString.Format("{0}_{1}", mouseUnitPoint.X, mouseUnitPoint.Y);
+            if (_currentHovered is not null) _currentHovered.IsHover = false;
+
+            if (!_simpleTileHash.TryGetValue(key, out var newHovered)) return;
+
+            _currentHovered = newHovered;
+            _currentHovered.IsHover = true;
+
+            if (Input.WasMouseLeftButtonJustPressed && _currentHovered is IClickable clickable)
+            {
+                clickable.OnClick();
+            }
+        }
+
         private void ResetFieldOfView()
         {
             _camera.Reset();
@@ -221,7 +253,7 @@ namespace Visualizer
         public void AddElement(IUiElement element)
         {
             _uiSpace.Add(element);
-            
+
             if (element is ITiledUiElement tiledElement)
             {
                 _simpleTileHash.Add(ZString.Format("{0}_{1}", tiledElement.UnitPosition.X, tiledElement.UnitPosition.Y), tiledElement);
