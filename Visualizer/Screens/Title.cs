@@ -1,21 +1,31 @@
 ﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using Visualizer.Elements;
 
 namespace Visualizer.Screens
 {
     public class Title : IScreen
     {
-        public SpriteBatch Batch { private get; set; }
-        public GlobalContents GlobalContents { private get; set; }
+        public VisualizerGame Game { private get; set; }
 
-        public void Update(GameTime gameTime)
+        public void Enter()
         {
-            
+            Game.AddElement(new PlainText
+            {
+                Value = "Visual Playground",
+                Position = new Vector2(-1, 0),
+                Scale = 4
+            });
+
+            Game.AddElement(new Button
+            {
+                Label = "Integration Comparison", Position = new Vector2(-1, -1),
+                OnClick = () => Game.SwitchScreen<IntegrationComparison>(),
+                Scale = 2
+            });
         }
 
-        public void Draw(GameTime gameTime)
-        {
-           Batch.DrawString(GlobalContents.DefaultFont, "Visual Playground", Vector2.One, Color.White, 0, Vector2.Zero, 4, SpriteEffects.None, 0);
-        }
+        public void Update(GameTime gameTime) { }
+
+        public void Draw(GameTime gameTime) { }
     }
 }

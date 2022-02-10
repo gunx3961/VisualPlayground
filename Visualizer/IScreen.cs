@@ -1,12 +1,12 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Visualizer
 {
     public interface IScreen
     {
-        SpriteBatch Batch { set; }
-        GlobalContents GlobalContents { set; }
+        VisualizerGame Game { set; }
 
         void Enter() { }
 

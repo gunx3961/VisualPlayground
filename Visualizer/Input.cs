@@ -5,12 +5,16 @@ namespace Visualizer
 {
     public class Input : GameComponent
     {
+        private readonly VisualizerGame _game;
         private KeyboardState _currentKeyboardState;
         private KeyboardState _previousKeyboardState;
         private MouseState _currentMouseState;
         private MouseState _previousMouseState;
 
-        public Input(Game game) : base(game) { }
+        public Input(VisualizerGame game) : base(game)
+        {
+            _game = game;
+        }
 
 
         public override void Update(GameTime gameTime)
@@ -33,5 +37,10 @@ namespace Visualizer
             _currentMouseState.MiddleButton is ButtonState.Released && _previousMouseState.MiddleButton is ButtonState.Pressed;
 
         public Point MouseDeltaMovement => _currentMouseState.Position - _previousMouseState.Position;
+
+        public int MouseDeltaScrollWheelValue => _currentMouseState.ScrollWheelValue - _previousMouseState.ScrollWheelValue;
+
+        public Vector2 MouseWorldUnitPosition => _game.ScreenSpaceToWorldSpaceUnit(_currentMouseState.Position);
+        public Point MouseScreenPosition => _currentMouseState.Position;
     }
 }

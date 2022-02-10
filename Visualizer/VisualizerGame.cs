@@ -1,7 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Collections.Generic;
+using Cysharp.Text;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MonoGame;
 using Visualizer.Screens;
 
 namespace Visualizer
@@ -9,16 +11,25 @@ namespace Visualizer
     public class VisualizerGame : Game
     {
         private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
-
-        private GlobalContents _globalContents;
 
         private IScreen _currentScreen;
-
-        private Input _input;
         private Camera2D _camera;
 
+        private const int DefaultPpu = 128;
+        private const int MaxPpu = 2048;
+        private const int MinPpu = 64;
+        private const int PpuStep = 64;
+        private int _pixelPerUnit;
+
         private bool _isDragging;
+
+        private readonly Dictionary<string, ITiledUiElement> _simpleTileHash;
+        private readonly List<IUiElement> _uiSpace;
+
+        public SpriteBatch Batch { get; private set; }
+        public readonly Input Input;
+        public GlobalContents GlobalContents { get; private set; }
+
 
         public VisualizerGame()
         {
@@ -29,10 +40,14 @@ namespace Visualizer
             Window.Title = "Visualizer";
             Window.AllowUserResizing = true;
 
-            _camera = new Camera2D { Zoom = 1f };
+            _camera = new Camera2D();
+            _pixelPerUnit = DefaultPpu;
 
-            _input = new Input(this);
-            Components.Add(_input);
+            Input = new Input(this);
+            Components.Add(Input);
+
+            _simpleTileHash = new Dictionary<string, ITiledUiElement>();
+            _uiSpace = new List<IUiElement>();
         }
 
         protected override void Initialize()
@@ -44,9 +59,9 @@ namespace Visualizer
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            Batch = new SpriteBatch(GraphicsDevice);
 
-            _globalContents = new GlobalContents(Content);
+            GlobalContents = new GlobalContents(Content);
 
             SwitchScreen<Title>();
         }
@@ -62,18 +77,25 @@ namespace Visualizer
             // if (Keyboard.GetState().IsKeyDown(Keys.NumPad0)) _camera.Zoom -= 0.05f;
             // if (Keyboard.GetState().IsKeyDown(Keys.NumPad1)) _camera.Zoom += 0.05f;
 
-            if (_input.WasMouseMiddleButtonJustReleased)
+            if (Input.WasMouseMiddleButtonJustReleased)
             {
                 _isDragging = false;
             }
             else if (_isDragging)
             {
-                _camera.Center -= _input.MouseDeltaMovement;
+                _camera.Center -= Input.MouseDeltaMovement;
             }
-            else if (_input.WasMouseMiddleButtonJustPressed)
+            else if (Input.WasMouseMiddleButtonJustPressed)
             {
                 _isDragging = true;
             }
+
+            if (Input.WasJustPressed(Keys.NumPad0) || Input.WasJustPressed(Keys.D0)) ResetFieldOfView();
+            if (Input.WasJustPressed(Keys.Escape) && _currentScreen is not Title) SwitchScreen<Title>();
+
+            if (Input.WasJustPressed(Keys.D1)) SwitchScreen<IntegrationComparison>();
+
+            MaintainPpu();
 
             _currentScreen?.Update(gameTime);
         }
@@ -83,22 +105,29 @@ namespace Visualizer
             base.Draw(gameTime);
             GraphicsDevice.Clear(Color.DarkSlateGray);
 
-            var cameraMatrix = Matrix.CreateTranslation(-_camera.Center.X + Window.ClientBounds.Width / 2,
-                -_camera.Center.Y + Window.ClientBounds.Height / 2, 0);
+            var cameraMatrix = _camera.GetMatrix(Window);
 
-            // var cameraMatrix = _camera.GetMatrix(_graphics);
-
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null,
+            Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null,
                 cameraMatrix);
+
+            // Camera center
+            // Batch.DrawCircle(_camera.Center.ToVector2(), 16, 8, Color.Yellow);
 
             // Grids
             const int radius = 6;
-            const int gap = 128;
+            var gap = _pixelPerUnit;
 
             void DrawGrid(Vector2 point)
             {
-                _spriteBatch.DrawLine(point + new Vector2(-radius, 0), point + new Vector2(radius, 0), Color.DarkGray);
-                _spriteBatch.DrawLine(point + new Vector2(0, -radius), point + new Vector2(0, radius), Color.DarkGray);
+                Batch.DrawLine(point + new Vector2(-radius, 0), point + new Vector2(radius, 0), Color.DarkGray);
+                Batch.DrawLine(point + new Vector2(0, -radius), point + new Vector2(0, radius), Color.DarkGray);
+            }
+
+            void DrawUnitMeasureText(Point point)
+            {
+                if (point.X % 5 != 0 || point.Y % 5 != 0) return;
+                Batch.DrawString(GlobalContents.DefaultFont, ZString.Format("{0},{1}", point.X, point.Y),
+                    ToPixelPosition(point.ToVector2()) + new Vector2(1, -2), Color.DarkGray);
             }
 
             var l = _camera.Center.X - Window.ClientBounds.Width / 2;
@@ -115,7 +144,9 @@ namespace Visualizer
                 var y = yStart;
                 while (y <= b + gap)
                 {
-                    DrawGrid(new Vector2(x, y));
+                    var pixelPosition = new Vector2(x, y);
+                    DrawGrid(pixelPosition);
+                    DrawUnitMeasureText(ToUnitPosition(pixelPosition).ToPoint());
 
                     y += gap;
                 }
@@ -123,22 +154,82 @@ namespace Visualizer
                 x += gap;
             }
 
-            _currentScreen?.Draw(gameTime);
+            DrawCurrentScreen(gameTime);
 
-            _spriteBatch.End();
+            Batch.End();
         }
 
-        private void SwitchScreen<T>()
+        private void DrawCurrentScreen(GameTime gameTime)
+        {
+            _currentScreen?.Draw(gameTime);
+            foreach (var ui in _uiSpace)
+            {
+                ui.Draw(this);
+            }
+        }
+
+        private void MaintainPpu()
+        {
+            var deltaWheel = Input.MouseDeltaScrollWheelValue;
+            if (deltaWheel == 0) return;
+            var deltaSign = deltaWheel > 0 ? 1 : -1;
+            if (deltaSign == 1 && _pixelPerUnit == MaxPpu || deltaSign == -1 && _pixelPerUnit == MinPpu) return;
+
+            var intentOrigin = Input.MouseWorldUnitPosition;
+            var pixelPositionOfIntentBefore = ToPixelPosition(intentOrigin);
+            _pixelPerUnit = Math.Clamp(_pixelPerUnit + PpuStep * deltaSign, MinPpu, MaxPpu);
+            var pixelPositionOfIntentAfter = ToPixelPosition(intentOrigin);
+
+            _camera.Center += (pixelPositionOfIntentAfter - pixelPositionOfIntentBefore).ToPoint();
+        }
+
+        private void ResetFieldOfView()
+        {
+            _camera.Reset();
+            _pixelPerUnit = DefaultPpu;
+        }
+
+
+        #region Utilities
+
+        public void SwitchScreen<T>()
             where T : IScreen, new()
         {
             _currentScreen?.Exit();
+            _uiSpace.Clear();
+            _simpleTileHash.Clear();
 
             var s = new T();
-            s.Batch = _spriteBatch;
-            s.GlobalContents = _globalContents;
+            s.Game = this;
             s.Enter();
 
             _currentScreen = s;
+
+            ResetFieldOfView();
         }
+
+        public Vector2 ToUnitPosition(Vector2 pixelPosition) => pixelPosition / _pixelPerUnit;
+        public Vector2 ToPixelPosition(Vector2 unitPosition) => unitPosition * _pixelPerUnit;
+
+        public Vector2 ScreenSpaceToWorldSpaceUnit(Point screenSpacePosition)
+        {
+            var cameraMatrix = _camera.GetMatrix(Window);
+            var worldPixel = Vector2.Transform(screenSpacePosition.ToVector2(), Matrix.Invert(cameraMatrix));
+            return ToUnitPosition(worldPixel);
+        }
+
+        public void AddElement(IUiElement element)
+        {
+            _uiSpace.Add(element);
+            
+            if (element is ITiledUiElement tiledElement)
+            {
+                _simpleTileHash.Add(ZString.Format("{0}_{1}", tiledElement.UnitPosition.X, tiledElement.UnitPosition.Y), tiledElement);
+            }
+        }
+
+        public float ScaleFactor => _pixelPerUnit / (float)DefaultPpu;
+
+        #endregion
     }
 }
