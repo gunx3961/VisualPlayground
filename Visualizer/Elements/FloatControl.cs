@@ -26,26 +26,26 @@ namespace Visualizer.Elements
             NormalizedValue = Math.Clamp(NormalizedValue + delta, 0, 1);
         }
 
-        public void Draw(VisualizerGame game)
+        public void Draw(VisualizerGame game, ref Camera2D camera)
         {
             var tileOrigin = UnitPosition.ToVector2();
             const float unitMargin = 0.025f;
             var hoverSize = new Vector2(1 - unitMargin * 2);
             var lowerFrom = tileOrigin + new Vector2(0, unitMargin * 2);
 
-            game.FillRectangle(lowerFrom, hoverSize, game.Palette.HalfNegative);
+            camera.FillRectangle(game, lowerFrom, hoverSize, game.Palette.HalfNegative);
 
             // Value visualization
             const float minimalHeight = 0.05f;
             var valueSize = new Vector2(hoverSize.X, minimalHeight + (hoverSize.Y - minimalHeight) * NormalizedValue);
             var upperFrom = tileOrigin + new Vector2(unitMargin * 2, 1 - unitMargin * 2 - valueSize.Y);
-            game.FillRectangle(upperFrom, valueSize, game.Palette.MidTone);
+            camera.FillRectangle(game, upperFrom, valueSize, game.Palette.MidTone);
 
             var valuePosition = tileOrigin + new Vector2(0.1f, 0.1f);
-            game.DrawShadowedString(ZString.Format("{0:#.####}", Value), valuePosition, game.Palette.Positive, game.Palette.Negative, 2);
+            camera.DrawShadowedString(game, ZString.Format("{0:#.####}", Value), valuePosition, game.Palette.Positive, game.Palette.Negative, 2);
 
             var namePosition = valuePosition + new Vector2(0f, 0.4f);
-            game.DrawShadowedString(Name, namePosition, game.Palette.Positive, game.Palette.Negative, 4);
+            camera.DrawShadowedString(game, Name, namePosition, game.Palette.Positive, game.Palette.Negative, 4);
         }
     }
 }

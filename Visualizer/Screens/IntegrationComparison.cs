@@ -19,19 +19,19 @@ namespace Visualizer.Screens
             {
                 UnitPosition = new Point(-1, -1)
             };
-            Game.AddElement(_gravity);
+            Game.AddElementToWorldSpace(_gravity);
 
             _initialX = new FloatControl("(x,", new Vector2(-10, 10), 1f)
             {
                 UnitPosition = new Point(0, -1)
             };
-            Game.AddElement(_initialX);
+            Game.AddElementToWorldSpace(_initialX);
 
             _initialY = new FloatControl("y)", new Vector2(-10, 10), 1f)
             {
                 UnitPosition = new Point(1, -1)
             };
-            Game.AddElement(_initialY);
+            Game.AddElementToWorldSpace(_initialY);
         }
 
         public void Exit() { }
@@ -40,10 +40,10 @@ namespace Visualizer.Screens
 
         public void Draw(GameTime gameTime)
         {
-            var sampling = new CurveSampling { From = -1, To = 1, SamplingCount = 64 };
+            var sampling = new CurveSampling { From = 0, To = 10, SamplingCount = 64 };
             // sampling.Draw<SimpleParabola>(Game);
 
-            sampling.Draw(Game, new JumpCurve { Gravity = _gravity.Value, InitialVeolocity = new Vector2(_initialX.Value, _initialY.Value) });
+            sampling.Draw(Game, Game.WorldCamera, new JumpCurve { Gravity = _gravity.Value, InitialVeolocity = new Vector2(_initialX.Value, _initialY.Value) });
         }
 
         private struct SimpleParabola : IParametricCurve

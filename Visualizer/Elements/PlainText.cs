@@ -9,11 +9,9 @@ namespace Visualizer.Elements
         public Vector2 Position;
         public float Scale;
 
-        public void Draw(VisualizerGame game)
+        public void Draw(VisualizerGame game, ref Camera2D camera)
         {
-            var pixelPosition = game.ToPixel(Position);
-            game.Batch.DrawString(game.GlobalContents.DefaultFont, Value, pixelPosition, game.Palette.Positive, 0,
-                Vector2.Zero, game.ScaleFactor * Scale, SpriteEffects.None, 0);
+            camera.DrawShadowedString(game, Value, Position, game.Palette.Positive, game.Palette.Negative, Scale);
         }
     }
 }

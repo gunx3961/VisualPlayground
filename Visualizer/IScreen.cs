@@ -7,7 +7,6 @@ namespace Visualizer
     public interface IScreen
     {
         VisualizerGame Game { set; }
-
         void Enter() { }
 
         void Update(GameTime gameTime);

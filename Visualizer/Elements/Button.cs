@@ -11,7 +11,7 @@ namespace Visualizer.Elements
         public bool IsHover { private get; set; }
         public Action OnClick { get; set; } = null!;
 
-        public void Draw(VisualizerGame game)
+        public void Draw(VisualizerGame game, ref Camera2D camera)
         {
             var tileOrigin = UnitPosition.ToVector2();
             const float unitMargin = 0.025f;
@@ -20,10 +20,10 @@ namespace Visualizer.Elements
             var upperFrom = IsHover ?
                 tileOrigin + new Vector2(unitMargin * 2, 0) :
                 tileOrigin + new Vector2(unitMargin);
-            game.FillRectangle(lowerFrom, hoverSize, game.Palette.HalfNegative);
-            game.FillRectangle(upperFrom, hoverSize, game.Palette.MidTone);
+            camera.FillRectangle(game, lowerFrom, hoverSize, game.Palette.HalfNegative);
+            camera.FillRectangle(game, upperFrom, hoverSize, game.Palette.MidTone);
 
-            game.DrawShadowedString(Label, upperFrom + new Vector2(0.05f, 0),
+            camera.DrawShadowedString(game, Label, upperFrom + new Vector2(0.05f, 0),
                 game.Palette.Positive, game.Palette.Negative, 2);
         }
     }

@@ -9,13 +9,13 @@ namespace Visualizer.Screens
         public float To;
         public int SamplingCount;
 
-        public void Draw<T>(VisualizerGame game)
+        public void Draw<T>(VisualizerGame game, Camera2D camera)
             where T : struct, IParametricCurve
         {
-            Draw(game, new T());
+            Draw(game, camera, new T());
         }
 
-        public void Draw<T>(VisualizerGame game, T curve)
+        public void Draw<T>(VisualizerGame game, Camera2D camera, T curve)
             where T : struct, IParametricCurve
         {
             var stepLength = (To - From) / (SamplingCount - 1);
@@ -23,7 +23,7 @@ namespace Visualizer.Screens
             for (var i = 0; i < points.Length; i += 1)
             {
                 var t = From + i * stepLength;
-                points[i] = game.ToPixel(new Vector2(curve.X(t), curve.Y(t)));
+                points[i] = camera.ToPixel(new Vector2(curve.X(t), curve.Y(t)));
             }
 
             for (var i = 1; i < points.Length; i += 1)

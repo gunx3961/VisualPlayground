@@ -46,7 +46,8 @@ namespace Visualizer
 
         public int MouseDeltaScrollWheelValue => _currentMouseState.ScrollWheelValue - _previousMouseState.ScrollWheelValue;
 
-        public Vector2 MouseWorldUnitPosition => _game.ScreenSpaceToWorldSpaceUnit(_currentMouseState.Position);
+        public Vector2 MouseWorldSpaceUnitPosition => _game.ScreenSpaceToWorldSpaceUnit(_currentMouseState.Position);
+        // public Vector2 MouseUiSpaceUnitPosition => _game.ScreenSpaceToWorldSpaceUnit(_currentMouseState.Position);
         public Point MouseScreenPosition => _currentMouseState.Position;
     }
 }

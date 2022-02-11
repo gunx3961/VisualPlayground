@@ -9,14 +9,14 @@ namespace Visualizer.Screens
 
         public void Enter()
         {
-            Game.AddElement(new PlainText
+            Game.AddElementToWorldSpace(new PlainText
             {
                 Value = "Visual Playground",
                 Position = new Vector2(-2, -1),
                 Scale = 4
             });
 
-            Game.AddElement(new Button
+            Game.AddElementToWorldSpace(new Button
             {
                 Label = "Integrate", UnitPosition = new Point(-1, 0),
                 OnClick = () => Game.SwitchScreen<IntegrationComparison>()
