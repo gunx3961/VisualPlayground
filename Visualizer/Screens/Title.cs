@@ -5,20 +5,20 @@ namespace Visualizer.Screens
 {
     public class Title : IScreen
     {
-        public VisualizerGame Game { private get; set; }
+        public VisualizerGame Game { private get; set; } = null!;
 
         public void Enter()
         {
             Game.AddElement(new PlainText
             {
                 Value = "Visual Playground",
-                Position = new Vector2(-1, 0),
+                Position = new Vector2(-2, -1),
                 Scale = 4
             });
 
             Game.AddElement(new Button
             {
-                Label = "Integration Comparison", UnitPosition = new Point(-1, -1),
+                Label = "Integrate", UnitPosition = new Point(-1, 0),
                 OnClick = () => Game.SwitchScreen<IntegrationComparison>()
             });
         }

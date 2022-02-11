@@ -26,11 +26,12 @@ namespace Visualizer
         private readonly Dictionary<string, ITiledUiElement> _simpleTileHash;
         private readonly List<IUiElement> _uiSpace;
         private ITiledUiElement? _currentHovered;
+        private IControl1D? _currentControlling;
 
 
-        public SpriteBatch Batch { get; private set; }
+        public SpriteBatch Batch { get; private set; } = null!;
         public readonly Input Input;
-        public GlobalContents GlobalContents { get; private set; }
+        public GlobalContents GlobalContents { get; private set; } = null!;
         public IPalette Palette;
 
 
@@ -109,7 +110,7 @@ namespace Visualizer
 
             MaintainPpu();
 
-            MaintainUI();
+            MaintainUi();
 
             _currentScreen?.Update(gameTime);
         }
@@ -141,7 +142,7 @@ namespace Visualizer
             {
                 if (point.X % 5 != 0 || point.Y % 5 != 0) return;
                 Batch.DrawString(GlobalContents.DefaultFont, ZString.Format("{0},{1}", point.X, point.Y),
-                    ToPixelPosition(point.ToVector2()) + new Vector2(1, -2), Palette.HalfNegative);
+                    ToPixel(point.ToVector2()) + new Vector2(1, -2), Palette.HalfNegative);
             }
 
             var l = _camera.Center.X - Window.ClientBounds.Width / 2;
@@ -160,7 +161,7 @@ namespace Visualizer
                 {
                     var pixelPosition = new Vector2(x, y);
                     DrawGrid(pixelPosition);
-                    DrawUnitMeasureText(ToUnitPosition(pixelPosition).ToPoint());
+                    DrawUnitMeasureText(ToUnit(pixelPosition).ToPoint());
 
                     y += gap;
                 }
@@ -190,28 +191,48 @@ namespace Visualizer
             if (deltaSign == 1 && _pixelPerUnit == MaxPpu || deltaSign == -1 && _pixelPerUnit == MinPpu) return;
 
             var intentOrigin = Input.MouseWorldUnitPosition;
-            var pixelPositionOfIntentBefore = ToPixelPosition(intentOrigin);
+            var pixelPositionOfIntentBefore = ToPixel(intentOrigin);
             _pixelPerUnit = Math.Clamp(_pixelPerUnit + PpuStep * deltaSign, MinPpu, MaxPpu);
-            var pixelPositionOfIntentAfter = ToPixelPosition(intentOrigin);
+            var pixelPositionOfIntentAfter = ToPixel(intentOrigin);
 
             _camera.Center += (pixelPositionOfIntentAfter - pixelPositionOfIntentBefore).ToPoint();
         }
 
-        private void MaintainUI()
+        private void MaintainUi()
         {
+            // Hover and target
             var mouseUnitPosition = Input.MouseWorldUnitPosition;
             var mouseUnitPoint = new Point((int)MathF.Floor(mouseUnitPosition.X), (int)MathF.Floor(mouseUnitPosition.Y));
             var key = ZString.Format("{0}_{1}", mouseUnitPoint.X, mouseUnitPoint.Y);
             if (_currentHovered is not null) _currentHovered.IsHover = false;
 
-            if (!_simpleTileHash.TryGetValue(key, out var newHovered)) return;
-
-            _currentHovered = newHovered;
-            _currentHovered.IsHover = true;
-
-            if (Input.WasMouseLeftButtonJustPressed && _currentHovered is IClickable clickable)
+            if (_simpleTileHash.TryGetValue(key, out var newHovered))
             {
-                clickable.OnClick();
+                _currentHovered = newHovered;
+                _currentHovered.IsHover = true;
+            }
+
+            // Operations
+            if (Input.WasMouseLeftButtonJustPressed)
+            {
+                if (_currentHovered is IClickable clickable)
+                {
+                    clickable.OnClick();
+                }
+
+                if (_currentHovered is IControl1D control1D)
+                {
+                    _currentControlling = control1D;
+                }
+            }
+            else if (Input.WasMouseLeftButtonJustReleased)
+            {
+                _currentControlling = null;
+            }
+            else
+            {
+                var delta1D = -Input.MouseDeltaMovement.Y / 256f;
+                _currentControlling?.OnChange(delta1D);
             }
         }
 
@@ -240,14 +261,14 @@ namespace Visualizer
             ResetFieldOfView();
         }
 
-        public Vector2 ToUnitPosition(Vector2 pixelPosition) => pixelPosition / _pixelPerUnit;
-        public Vector2 ToPixelPosition(Vector2 unitPosition) => unitPosition * _pixelPerUnit;
+        public Vector2 ToUnit(Vector2 pixelPosition) => pixelPosition / _pixelPerUnit;
+        public Vector2 ToPixel(Vector2 unitPosition) => unitPosition * _pixelPerUnit;
 
         public Vector2 ScreenSpaceToWorldSpaceUnit(Point screenSpacePosition)
         {
             var cameraMatrix = _camera.GetMatrix(Window);
             var worldPixel = Vector2.Transform(screenSpacePosition.ToVector2(), Matrix.Invert(cameraMatrix));
-            return ToUnitPosition(worldPixel);
+            return ToUnit(worldPixel);
         }
 
         public void AddElement(IUiElement element)
@@ -261,6 +282,21 @@ namespace Visualizer
         }
 
         public float ScaleFactor => _pixelPerUnit / (float)DefaultPpu;
+
+        public void DrawShadowedString(string value, Vector2 unitPosition, Color color, Color shadowColor, float scale = 1, float shadowOffset = 0.005f)
+        {
+            var offset = ToPixel(new Vector2(-shadowOffset, shadowOffset)) * scale;
+            var pixelPosition = ToPixel(unitPosition);
+            Batch.DrawString(GlobalContents.DefaultFont, value, pixelPosition + offset,
+                shadowColor, 0, Vector2.Zero, ScaleFactor * scale, SpriteEffects.None, 0);
+            Batch.DrawString(GlobalContents.DefaultFont, value, pixelPosition,
+                color, 0, Vector2.Zero, ScaleFactor * scale, SpriteEffects.None, 0);
+        }
+
+        public void FillRectangle(Vector2 unitPosition, Vector2 unitSize, Color color)
+        {
+            Batch.FillRectangle(ToPixel(unitPosition), ToPixel(unitSize), color);
+        }
 
         #endregion
     }

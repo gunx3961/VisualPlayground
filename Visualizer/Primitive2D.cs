@@ -12,7 +12,7 @@ namespace Visualizer
         private static readonly Dictionary<String, List<Vector2>> circleCache = new Dictionary<string, List<Vector2>>();
 
         //private static readonly Dictionary<String, List<Vector2>> arcCache = new Dictionary<string, List<Vector2>>();
-        private static Texture2D pixel;
+        private static Texture2D pixel = null!;
 
         #endregion
 

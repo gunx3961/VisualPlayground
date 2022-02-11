@@ -23,7 +23,7 @@ namespace Visualizer.Screens
             for (var i = 0; i < points.Length; i += 1)
             {
                 var t = From + i * stepLength;
-                points[i] = game.ToPixelPosition(new Vector2(curve.X(t), curve.Y(t)));
+                points[i] = game.ToPixel(new Vector2(curve.X(t), curve.Y(t)));
             }
 
             for (var i = 1; i < points.Length; i += 1)
