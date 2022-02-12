@@ -42,10 +42,10 @@ namespace Visualizer.Elements
             camera.FillRectangle(game, upperFrom, valueSize, game.Palette.MidTone);
 
             var valuePosition = tileOrigin + new Vector2(0.1f, 0.1f);
-            camera.DrawShadowedString(game, ZString.Format("{0:#.####}", Value), valuePosition, game.Palette.Positive, game.Palette.Negative, 2);
+            camera.DrawShadowedString(game, ZString.Format("{0:0.####}", Value), valuePosition, game.Palette.Positive, game.Palette.Negative, 2);
 
-            var namePosition = valuePosition + new Vector2(0f, 0.4f);
-            camera.DrawShadowedString(game, Name, namePosition, game.Palette.Positive, game.Palette.Negative, 4);
+            var namePosition = tileOrigin + new Vector2(unitMargin * 2 + 0.05f, 0.4f);
+            camera.DrawShadowedString(game, Name, namePosition, game.Palette.Positive, game.Palette.Negative, 3);
         }
     }
 }

@@ -5,7 +5,7 @@ namespace Visualizer.Elements
 {
     public class PlainText : IUiElement
     {
-        public string? Value;
+        public string Value = null!;
         public Vector2 Position;
         public float Scale;
 

@@ -15,19 +15,20 @@ namespace Visualizer
         private IScreen? _currentScreen;
 
         public Camera2D WorldCamera;
-        // private Camera2D _uiCamera;
+        public Camera2D UiCamera;
 
-        private const int DefaultPpu = 128;
-        private const int MaxPpu = 2048;
-        private const int MinPpu = 64;
-        private const int PpuStep = 64;
-        // private int _pixelPerUnit;
+        private const int DefaultPpu = 64;
+        private const double MaxPpu = 2048;
+        private const double MinPpu = 0.5;
 
-        private const double UiPpu = 64;
+        // private const int PpuStep = 64;
+        private const int PpuScalingStep = 2;
 
         private bool _isDragging;
 
+        public readonly ElementFactory ElementFactory;
         private readonly UiSpace _worldUiSpace;
+        private readonly UiSpace _uiSpace;
 
 
         public SpriteBatch Batch { get; private set; } = null!;
@@ -45,11 +46,15 @@ namespace Visualizer
             Window.Title = "Visualizer";
             Window.AllowUserResizing = true;
 
-            WorldCamera = new Camera2D(DefaultPpu);
-
-            _worldUiSpace = new UiSpace(this);
-
             Input = new Input(this);
+
+            WorldCamera = new Camera2D(Window, DefaultPpu);
+            UiCamera = new Camera2D(Window, DefaultPpu);
+
+            ElementFactory = new ElementFactory(this);
+            _worldUiSpace = new UiSpace(Input, WorldCamera);
+            _uiSpace = new UiSpace(Input, UiCamera);
+
             Components.Add(Input);
 
             Palette = new SimplePalette
@@ -102,6 +107,11 @@ namespace Visualizer
 
             MaintainWorldPpu();
 
+            const int uiPaddingPx = 16;
+            UiCamera.Reset();
+            UiCamera.PixelCenter -= new Point(uiPaddingPx);
+
+            _uiSpace.Update();
             _worldUiSpace.Update();
 
             _currentScreen?.Update(gameTime);
@@ -113,25 +123,26 @@ namespace Visualizer
             GraphicsDevice.Clear(Palette.Negative);
 
 
-            WorldCamera.BatchBegin(Window, Batch);
+            WorldCamera.BatchBegin(Batch);
 
             // Camera center
             // Batch.DrawCircle(_camera.Center.ToVector2(), 16, 8, Color.Yellow);
 
             // Grids
             const int radius = 4;
-            var gap = (int)WorldCamera.PixelPerUnit;
+            const int gapPixel = 128;
+            var measureUnitLength = Math.Clamp((int)(WorldCamera.ToUnit(gapPixel) * 2), 1, int.MaxValue);
 
-            void DrawGrid(Vector2 point)
+            void DrawGrid(Vector2 pixelPosition)
             {
-                Batch.DrawLine(point + new Vector2(-radius, 0), point + new Vector2(radius, 0), Palette.HalfNegative);
-                Batch.DrawLine(point + new Vector2(0, -radius), point + new Vector2(0, radius), Palette.HalfNegative);
+                Batch.DrawLine(pixelPosition + new Vector2(-radius, 0), pixelPosition + new Vector2(radius - 1, 0), Palette.HalfNegative);
+                Batch.DrawLine(pixelPosition + new Vector2(0, -radius + 1), pixelPosition + new Vector2(0, radius), Palette.HalfNegative);
             }
 
-            void DrawUnitMeasureText(Point point, int left, int top)
+            void DrawUnitMeasureText(Point unit, int left, int top)
             {
-                var (x, y) = point;
-                if (x % 5 != 0 || y % 5 != 0) return;
+                var (x, y) = unit;
+                if (x % measureUnitLength != 0 || y % measureUnitLength != 0) return;
 
                 var xAxisPosition = new Vector2(WorldCamera.ToPixel(x) + 1, top - 2);
                 Batch.DrawString(GlobalContents.DefaultFont, ZString.Format("{0}", x), xAxisPosition, Palette.HalfPositive);
@@ -145,39 +156,57 @@ namespace Visualizer
             var t = WorldCamera.PixelCenter.Y - Window.ClientBounds.Height / 2;
             var b = t + Window.ClientBounds.Height;
 
-            var xStart = (l / gap - 1) * gap;
-            var yStart = (t / gap - 1) * gap;
+            var ltUnit = WorldCamera.ToUnit(new Vector2(l, t));
+            var xStartPixel = (double)WorldCamera.ToPixel(MathF.Floor(ltUnit.X));
+            var yStartPixel = (double)WorldCamera.ToPixel(MathF.Floor(ltUnit.Y));
+            // var xStart = (l / gap - 1) * gap;
+            // var yStart = (t / gap - 1) * gap;
 
-            var x = xStart;
-            while (x <= r + gap)
+            var x = xStartPixel;
+            if (WorldCamera.PixelPerUnit > gapPixel) // FIXME
             {
-                var y = yStart;
-                while (y <= b + gap)
+                while (x <= r + gapPixel)
                 {
-                    var pixelPosition = new Vector2(x, y);
-                    DrawGrid(pixelPosition);
-                    DrawUnitMeasureText(WorldCamera.ToUnit(pixelPosition).ToPoint(), l, t);
+                    var y = yStartPixel;
+                    while (y <= b + gapPixel)
+                    {
+                        var pixelPosition = new Vector2((float)x, (float)y);
+                        DrawGrid(pixelPosition);
+                        DrawUnitMeasureText(WorldCamera.ToUnit(pixelPosition).ToPoint(), l, t);
 
-                    y += gap;
+                        y += gapPixel;
+                    }
+
+                    x += gapPixel;
                 }
-
-                x += gap;
             }
 
-            DrawCurrentScreen(gameTime);
+            DrawCurrentScreenWorld(gameTime);
 
             Batch.End();
 
             // Draw UI space
-            const int uiSpacePpu = DefaultPpu / 2;
+            UiCamera.BatchBegin(Batch);
+
+            DrawCurrentScreenUi(gameTime);
+
+            Batch.End();
         }
 
-        private void DrawCurrentScreen(GameTime gameTime)
+        private void DrawCurrentScreenWorld(GameTime gameTime)
         {
             _currentScreen?.Draw(gameTime);
-            foreach (var ui in _worldUiSpace)
+            foreach (var element in _worldUiSpace)
             {
-                ui.Draw(this, ref WorldCamera);
+                element.Draw(this, ref WorldCamera);
+            }
+        }
+
+        private void DrawCurrentScreenUi(GameTime gameTime)
+        {
+            foreach (var element in _uiSpace)
+            {
+                element.Draw(this, ref UiCamera);
             }
         }
 
@@ -190,7 +219,10 @@ namespace Visualizer
 
             var intentOrigin = Input.MouseWorldSpaceUnitPosition;
             var pixelPositionOfIntentBefore = WorldCamera.ToPixel(intentOrigin);
-            WorldCamera.PixelPerUnit = Math.Clamp(WorldCamera.PixelPerUnit + PpuStep * deltaSign, MinPpu, MaxPpu);
+            // WorldCamera.PixelPerUnit = Math.Clamp(WorldCamera.PixelPerUnit + PpuStep * deltaSign, MinPpu, MaxPpu);
+            WorldCamera.PixelPerUnit = Math.Clamp(
+                deltaSign == 1 ? WorldCamera.PixelPerUnit * PpuScalingStep : WorldCamera.PixelPerUnit / PpuScalingStep,
+                MinPpu, MaxPpu);
             var pixelPositionOfIntentAfter = WorldCamera.ToPixel(intentOrigin);
 
             WorldCamera.PixelCenter += (pixelPositionOfIntentAfter - pixelPositionOfIntentBefore).ToPoint();
@@ -198,7 +230,7 @@ namespace Visualizer
 
         private void ResetFieldOfView()
         {
-            WorldCamera.Reset(Window);
+            WorldCamera.Reset();
         }
 
 
@@ -208,7 +240,8 @@ namespace Visualizer
             where T : IScreen, new()
         {
             _currentScreen?.Exit();
-           _worldUiSpace.Clear();
+            _worldUiSpace.Reset();
+            _uiSpace.Reset();
 
             var s = new T();
             s.Game = this;
@@ -219,8 +252,8 @@ namespace Visualizer
             ResetFieldOfView();
         }
 
-        public Vector2 ScreenSpaceToWorldSpaceUnit(Point screenSpacePosition) => WorldCamera.ScreenSpacePointToUnit(Window, screenSpacePosition);
-        // public Vector2 ScreenSpaceToUiSpaceUnit(Point screenSpacePosition) => _uiSpace.ScreenSpacePointToUnit(Window, screenSpacePosition);
+        public Vector2 ScreenSpaceToWorldSpaceUnit(Point screenSpacePosition) => WorldCamera.ScreenSpacePointToUnit(screenSpacePosition);
+        public Vector2 ScreenSpaceToUiSpaceUnit(Point screenSpacePosition) => UiCamera.ScreenSpacePointToUnit(screenSpacePosition);
 
         public void AddElementToWorldSpace(IUiElement element)
         {
@@ -229,7 +262,7 @@ namespace Visualizer
 
         public void AddElementToUiSpace(IUiElement element)
         {
-            
+            _uiSpace.Register(element);
         }
 
         #endregion

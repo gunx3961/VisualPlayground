@@ -11,15 +11,28 @@ namespace Visualizer.Screens
         {
             Game.AddElementToWorldSpace(new PlainText
             {
-                Value = "Visual Playground",
-                Position = new Vector2(-2, -1),
+                Value = "Visual",
+                Position = new Vector2(0.5f, 0.3f),
+                Scale = 4
+            });
+
+            Game.AddElementToWorldSpace(new PlainText
+            {
+                Value = "Playground",
+                Position = new Vector2(0.5f, 1f),
                 Scale = 4
             });
 
             Game.AddElementToWorldSpace(new Button
             {
-                Label = "Integrate", UnitPosition = new Point(-1, 0),
-                OnClick = () => Game.SwitchScreen<IntegrationComparison>()
+                Footer = "#0", UnitPosition = new Point(1, 3),
+                Pressed = () => Game.SwitchScreen<IntegrationComparison>()
+            });
+            Game.AddElementToWorldSpace(new PlainText
+            {
+                Value = "Integration Comparison",
+                Position = new Vector2(1.3f, 2.7f),
+                Scale = 3
             });
         }
 

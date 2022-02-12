@@ -15,23 +15,14 @@ namespace Visualizer.Screens
 
         public void Enter()
         {
-            _gravity = new FloatControl("G", new Vector2(1, 10), 1f)
-            {
-                UnitPosition = new Point(-1, -1)
-            };
-            Game.AddElementToWorldSpace(_gravity);
 
-            _initialX = new FloatControl("(x,", new Vector2(-10, 10), 1f)
-            {
-                UnitPosition = new Point(0, -1)
-            };
-            Game.AddElementToWorldSpace(_initialX);
+            _gravity = Game.ElementFactory.BuildUiFloatControl(0, 0, "G", new Vector2(1, 10));
+            _initialX = Game.ElementFactory.BuildUiFloatControl(0, 1, "(x,", new Vector2(-10, 10), 0.7f);
+            _initialY = Game.ElementFactory.BuildUiFloatControl(1, 1, "y)", new Vector2(-10, 10));
 
-            _initialY = new FloatControl("y)", new Vector2(-10, 10), 1f)
-            {
-                UnitPosition = new Point(1, -1)
-            };
-            Game.AddElementToWorldSpace(_initialY);
+            Game.ElementFactory.BuildUiButton(0, 3, null, "Back", () => { Game.SwitchScreen<Title>(); });
+            
+            Game.ElementFactory.BuildWorldPositionIndicator();
         }
 
         public void Exit() { }
