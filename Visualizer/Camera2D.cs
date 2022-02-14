@@ -6,28 +6,28 @@ namespace Visualizer
 {
     public class Camera2D
     {
-        private readonly GameWindow _window;
+        private readonly VisualizerGame _game;
         public Point PixelCenter;
         public double PixelPerUnit;
-        public readonly double DefaultPpu;
+        private readonly double _defaultPpu;
 
-        public Camera2D(GameWindow window, double defaultPpu)
+        public Camera2D(VisualizerGame game, double defaultPpu)
         {
-            _window = window;
+            _game = game;
             PixelCenter = default;
-            PixelPerUnit = DefaultPpu = defaultPpu;
+            PixelPerUnit = _defaultPpu = defaultPpu;
         }
 
-        public void Reset()
+        public void Reset(Vector2 unit = default)
         {
-            PixelCenter = Point.Zero + new Point(_window.ClientBounds.Width / 2, _window.ClientBounds.Height / 2);
-            PixelPerUnit = DefaultPpu;
+            PixelCenter = ToPixel(unit).ToPoint() + new Point(_game.Window.ClientBounds.Width / 2, _game.Window.ClientBounds.Height / 2);
+            PixelPerUnit = _defaultPpu;
         }
 
         public Matrix GetMatrix()
         {
-            return Matrix.CreateTranslation(-PixelCenter.X + _window.ClientBounds.Width / 2,
-                -PixelCenter.Y + _window.ClientBounds.Height / 2, 0);
+            return Matrix.CreateTranslation(-PixelCenter.X + _game.Window.ClientBounds.Width / 2,
+                -PixelCenter.Y + _game.Window.ClientBounds.Height / 2, 0);
         }
 
         public Vector2 ScreenSpacePointToUnit(Point screenSpacePosition)
@@ -43,30 +43,36 @@ namespace Visualizer
         public Vector2 ToPixel(Vector2 unit) => new((float)(unit.X * PixelPerUnit), (float)(unit.Y * PixelPerUnit));
         public float ToPixel(float unit) => (float)(unit * PixelPerUnit);
 
-        public float ScaleFactor => (float)(PixelPerUnit / DefaultPpu);
+        public float ScaleFactor => (float)(PixelPerUnit / _defaultPpu);
 
-        public void BatchBegin(SpriteBatch batch)
+        public void BatchBegin()
         {
             var cameraMatrix = GetMatrix();
 
-            batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null,
+            _game.Batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, null, null,
                 cameraMatrix);
         }
 
-        public void DrawShadowedString(VisualizerGame game, string value, Vector2 unitPosition, Color color,
+        public void DrawShadowedString(string value, Vector2 unitPosition, Color color,
             Color shadowColor, float scale = 1, float shadowOffset = 0.005f)
         {
             var offset = ToPixel(new Vector2(-shadowOffset, shadowOffset)) * scale;
             var pixelPosition = ToPixel(unitPosition);
-            game.Batch.DrawString(game.GlobalContents.DefaultFont, value, pixelPosition + offset,
+            _game.Batch.DrawString(_game.GlobalContents.DefaultFont, value, pixelPosition + offset,
                 shadowColor, 0, Vector2.Zero, ScaleFactor * scale, SpriteEffects.None, 0);
-            game.Batch.DrawString(game.GlobalContents.DefaultFont, value, pixelPosition,
+            _game.Batch.DrawString(_game.GlobalContents.DefaultFont, value, pixelPosition,
                 color, 0, Vector2.Zero, ScaleFactor * scale, SpriteEffects.None, 0);
         }
 
-        public void FillRectangle(VisualizerGame game, Vector2 unitPosition, Vector2 unitSize, Color color)
+        public void FillRectangle(Vector2 unitPosition, Vector2 unitSize, Color color)
         {
-            game.Batch.FillRectangle(ToPixel(unitPosition), ToPixel(unitSize), color);
+            _game.Batch.FillRectangle(ToPixel(unitPosition), ToPixel(unitSize), color);
+        }
+
+        public void DrawPoint(Vector2 unitPosition, Color color, int pxRadius = 2)
+        {
+            var pxPosition = ToPixel(unitPosition);
+            _game.Batch.FillRectangle(pxPosition - new Vector2(pxRadius), new Vector2(pxRadius * 2), color);
         }
     }
 }

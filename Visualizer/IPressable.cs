@@ -4,7 +4,8 @@ namespace Visualizer
 {
     public interface IPressable : ITiledUiElement
     {
-        Action Pressed { get; }
+        int Value { get; }
+        Action<int> Pressed { get; }
         bool IsPressing { set; }
     }
 }

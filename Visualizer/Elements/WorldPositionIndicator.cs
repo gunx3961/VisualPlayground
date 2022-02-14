@@ -8,7 +8,7 @@ namespace Visualizer.Elements
         {
             var worldUnit = game.Input.MouseWorldSpaceUnitPosition;
             var lb = camera.ScreenSpacePointToUnit(new Point(0, game.Window.ClientBounds.Height));
-            camera.DrawShadowedString(game, worldUnit.ToString(), lb + new Vector2(0.1f, -0.5f),
+            camera.DrawShadowedString(worldUnit.ToString(), lb + new Vector2(0.1f, -0.5f),
                 game.Palette.Positive, game.Palette.Negative, 2);
         }
     }

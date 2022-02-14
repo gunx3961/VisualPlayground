@@ -86,7 +86,7 @@ namespace Visualizer
                 {
                     if (_currentPointerOver == _targetPressable)
                     {
-                        _targetPressable.Pressed();
+                        _targetPressable.Pressed(_targetPressable.Value);
                     }
 
                     _targetPressable.IsPressing = false;

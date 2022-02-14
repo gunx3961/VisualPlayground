@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace Visualizer.Screens
+namespace Visualizer
 {
     public struct CurveSampling
     {

@@ -7,10 +7,11 @@ namespace Visualizer.Elements
     {
         public string? Text;
         public string? Footer;
+        public int Value { get; set; }
         public Point UnitPosition { get; set; }
         public bool IsHover { private get; set; }
         public bool IsPressing { private get; set; }
-        public Action Pressed { get; set; } = null!;
+        public Action<int> Pressed { get; set; } = null!;
 
         public void Draw(VisualizerGame game, ref Camera2D camera)
         {
@@ -21,13 +22,13 @@ namespace Visualizer.Elements
             var upperFrom = IsPressing ?
                 tileOrigin + new Vector2(unitMargin) :
                 tileOrigin + new Vector2(unitMargin * 2, 0);
-            camera.FillRectangle(game, lowerFrom, hoverSize, game.Palette.HalfNegative);
-            camera.FillRectangle(game, upperFrom, hoverSize, IsHover ? game.Palette.HalfPositive : game.Palette.MidTone);
+            camera.FillRectangle(lowerFrom, hoverSize, game.Palette.HalfNegative);
+            camera.FillRectangle(upperFrom, hoverSize, IsHover ? game.Palette.HalfPositive : game.Palette.MidTone);
 
-            camera.DrawShadowedString(game, Text ?? "", upperFrom + new Vector2(0.05f, -0.1f),
+            camera.DrawShadowedString(Text ?? "", upperFrom + new Vector2(0.05f, -0.1f),
                 game.Palette.Positive, game.Palette.Negative, 3);
 
-            camera.DrawShadowedString(game, Footer ?? "", upperFrom + new Vector2(0.05f, 0.4f),
+            camera.DrawShadowedString(Footer ?? "", upperFrom + new Vector2(0.05f, 0.4f),
                 game.Palette.Positive, game.Palette.Negative, 3);
         }
     }

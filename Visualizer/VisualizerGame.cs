@@ -48,8 +48,8 @@ namespace Visualizer
 
             Input = new Input(this);
 
-            WorldCamera = new Camera2D(Window, DefaultPpu);
-            UiCamera = new Camera2D(Window, DefaultPpu);
+            WorldCamera = new Camera2D(this, DefaultPpu);
+            UiCamera = new Camera2D(this, DefaultPpu);
 
             ElementFactory = new ElementFactory(this);
             _worldUiSpace = new UiSpace(Input, WorldCamera);
@@ -123,7 +123,7 @@ namespace Visualizer
             GraphicsDevice.Clear(Palette.Negative);
 
 
-            WorldCamera.BatchBegin(Batch);
+            WorldCamera.BatchBegin();
 
             // Camera center
             // Batch.DrawCircle(_camera.Center.ToVector2(), 16, 8, Color.Yellow);
@@ -186,7 +186,7 @@ namespace Visualizer
             Batch.End();
 
             // Draw UI space
-            UiCamera.BatchBegin(Batch);
+            UiCamera.BatchBegin();
 
             DrawCurrentScreenUi(gameTime);
 
@@ -243,15 +243,14 @@ namespace Visualizer
             _worldUiSpace.Reset();
             _uiSpace.Reset();
 
+            ResetFieldOfView();
+            
             var s = new T();
             s.Game = this;
             s.Enter();
 
             _currentScreen = s;
-
-            ResetFieldOfView();
         }
-
         public Vector2 ScreenSpaceToWorldSpaceUnit(Point screenSpacePosition) => WorldCamera.ScreenSpacePointToUnit(screenSpacePosition);
         public Vector2 ScreenSpaceToUiSpaceUnit(Point screenSpacePosition) => UiCamera.ScreenSpacePointToUnit(screenSpacePosition);
 

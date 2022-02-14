@@ -33,19 +33,19 @@ namespace Visualizer.Elements
             var hoverSize = new Vector2(1 - unitMargin * 2);
             var lowerFrom = tileOrigin + new Vector2(0, unitMargin * 2);
 
-            camera.FillRectangle(game, lowerFrom, hoverSize, game.Palette.HalfNegative);
+            camera.FillRectangle(lowerFrom, hoverSize, game.Palette.HalfNegative);
 
             // Value visualization
             const float minimalHeight = 0.05f;
             var valueSize = new Vector2(hoverSize.X, minimalHeight + (hoverSize.Y - minimalHeight) * NormalizedValue);
             var upperFrom = tileOrigin + new Vector2(unitMargin * 2, 1 - unitMargin * 2 - valueSize.Y);
-            camera.FillRectangle(game, upperFrom, valueSize, game.Palette.MidTone);
+            camera.FillRectangle(upperFrom, valueSize, game.Palette.MidTone);
 
             var valuePosition = tileOrigin + new Vector2(0.1f, 0.1f);
-            camera.DrawShadowedString(game, ZString.Format("{0:0.####}", Value), valuePosition, game.Palette.Positive, game.Palette.Negative, 2);
+            camera.DrawShadowedString(ZString.Format("{0:0.####}", Value), valuePosition, game.Palette.Positive, game.Palette.Negative, 2);
 
             var namePosition = tileOrigin + new Vector2(unitMargin * 2 + 0.05f, 0.4f);
-            camera.DrawShadowedString(game, Name, namePosition, game.Palette.Positive, game.Palette.Negative, 3);
+            camera.DrawShadowedString(Name, namePosition, game.Palette.Positive, game.Palette.Negative, 3);
         }
     }
 }

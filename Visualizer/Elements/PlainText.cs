@@ -11,7 +11,7 @@ namespace Visualizer.Elements
 
         public void Draw(VisualizerGame game, ref Camera2D camera)
         {
-            camera.DrawShadowedString(game, Value, Position, game.Palette.Positive, game.Palette.Negative, Scale);
+            camera.DrawShadowedString(Value, Position, game.Palette.Positive, game.Palette.Negative, Scale);
         }
     }
 }

@@ -26,7 +26,7 @@ namespace Visualizer.Screens
             Game.AddElementToWorldSpace(new Button
             {
                 Footer = "#0", UnitPosition = new Point(1, 3),
-                Pressed = () => Game.SwitchScreen<IntegrationComparison>()
+                Pressed = value => Game.SwitchScreen<IntegrationComparison>()
             });
             Game.AddElementToWorldSpace(new PlainText
             {
