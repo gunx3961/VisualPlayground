@@ -29,16 +29,14 @@ namespace Visualizer.Screens
 
             _deltaTime = Game.ElementFactory.BuildUiFloatControl(2, 0, "dt", new Vector2(0.017f, 0.1f));
 
-
-            Game.ElementFactory.BuildUiButton(0, 5, null, "Back", 0, v => { Game.SwitchScreen<Title>(); });
-
             Game.ElementFactory.BuildWorldPositionIndicator();
 
             Game.WorldCamera.Reset(new Vector2(-4, -4));
 
             _integrationTypes = new List<IIntegrationMeta>();
             _integrationTypes.Add(new NoobIntegrationMeta());
-            _integrationTypes.Add(new VerletIntegrationMeta());
+            _integrationTypes.Add(new BasicVerletMeta());
+            _integrationTypes.Add(new VelocityVerletMeta());
 
             void Reset(int value) => ResetIntegration(_integrationTypes[value]);
 
@@ -154,7 +152,7 @@ namespace Visualizer.Screens
             }
         }
 
-        private class VerletIntegration : IIntegration
+        private class BasicVerlet : IIntegration
         {
             public Vector2 PreviousPosition;
             public Vector2 Acceleration;
@@ -163,7 +161,7 @@ namespace Visualizer.Screens
             {
                 var newPosition = 2 * Value - PreviousPosition + Acceleration * deltaTime * deltaTime;
 
-                return new VerletIntegration
+                return new BasicVerlet
                 {
                     Acceleration = Acceleration,
                     PreviousPosition = Value,
@@ -174,20 +172,20 @@ namespace Visualizer.Screens
             public Vector2 Value { get; set; }
         }
 
-        private class VerletIntegrationMeta : IIntegrationMeta
+        private class BasicVerletMeta : IIntegrationMeta
         {
-            public string Name => "Verlet";
+            public string Name => "Basic Verlet";
             public string Equation => "P1 = P0 + v0dt + 0.5adt^2, P(n+1) = 2P(n) - P(n-1) + adt^2";
 
             public IIntegration[] GetInitialSequence(Vector2 initialPosition, Vector2 initialVelocity, Vector2 initialAcceleration, float deltaTime)
             {
-                var p0 = new VerletIntegration
+                var p0 = new BasicVerlet
                 {
                     Value = initialPosition,
                     Acceleration = initialAcceleration
                 };
 
-                var p1 = new VerletIntegration
+                var p1 = new BasicVerlet
                 {
                     PreviousPosition = initialPosition,
                     Value = initialPosition + initialVelocity * deltaTime + 0.5f * initialAcceleration * deltaTime * deltaTime,
@@ -195,6 +193,37 @@ namespace Visualizer.Screens
                 };
 
                 return new IIntegration[] { p0, p1 };
+            }
+        }
+
+        private class VelocityVerletMeta : IIntegrationMeta
+        {
+            public string Name => "Velocity Verlet";
+            public string Equation => "P(t+dt)=P(t)+v(t)dt+0.5a(t)dt^2, v(t+dt)=v(t)+0.5(a(t)+a(t+dt))dt";
+
+            public IIntegration[] GetInitialSequence(Vector2 initialPosition, Vector2 initialVelocity, Vector2 initialAcceleration, float deltaTime)
+            {
+                var p0 = new VelocityVerlet
+                {
+                    Value = Vector2.Zero,
+                    Velocity = initialVelocity,
+                    ConstantAcceleration = initialAcceleration
+                };
+                return new IIntegration[] { p0 };
+            }
+        }
+
+        private class VelocityVerlet : IIntegration
+        {
+            public Vector2 Velocity;
+            public Vector2 ConstantAcceleration;
+            public Vector2 Value { get; set; }
+
+            public IIntegration Next(float deltaTime)
+            {
+                var newPosition = Value + Velocity * deltaTime + 0.5f * ConstantAcceleration * deltaTime * deltaTime;
+                var newV = Velocity + ConstantAcceleration * deltaTime;
+                return new VelocityVerlet { Value = newPosition, Velocity = newV, ConstantAcceleration = ConstantAcceleration };
             }
         }
     }
